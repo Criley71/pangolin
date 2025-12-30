@@ -110,3 +110,8 @@ bool REPL::is_outline(const string &s) {
   }
   return false;
 }
+
+
+//TODO: MAKE OWN SET OF FILES FOR START UP SCREEN TO REMOVE FROM REPL PART
+//ADD IN ALIAS COMMAND
+//ADD IN CD AND EXIT
