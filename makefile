@@ -1,23 +1,28 @@
 CXX = g++
-CXXFLAGS = -Wall -std=c++17
+CXXFLAGS = -Wall -Wextra -std=c++17 -MMD -MP
+LDFLAGS = -lreadline -lncurses
 TARGET = pangolin
+
 SRC_DIR = src
 OBJ_DIR = obj
 
-SRC = $(SRC_DIR)/pangolin.cpp $(SRC_DIR)/repl.cpp
-OBJ = $(patsubst $(SRC_DIR)/%.cpp,$(OBJ_DIR)/%.o,$(SRC))
+SRC = $(SRC_DIR)/pangolin.cpp \
+      $(SRC_DIR)/repl.cpp \
+      $(SRC_DIR)/commands.cpp
+
+OBJ = $(SRC:$(SRC_DIR)/%.cpp=$(OBJ_DIR)/%.o)
+DEP = $(OBJ:.o=.d)
 
 $(TARGET): $(OBJ)
-	$(CXX) $(CXXFLAGS) -o $@ $^
+	$(CXX) $(CXXFLAGS) -o $@ $(OBJ) $(LDFLAGS)
 
-# Compile .cpp → obj/*.o
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
 	mkdir -p $(OBJ_DIR)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
+-include $(DEP)
+
 clean:
 	rm -rf $(OBJ_DIR) $(TARGET)
 
-
-
-.PHONY: all clean
+.PHONY: clean

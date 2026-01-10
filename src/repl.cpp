@@ -1,16 +1,25 @@
 #include "../include/repl.h"
 
+
+
+
 void REPL::repl_loop() {
+
   string user_in = "";
   string buf = "";
   vector<string> input = {};
   shell_startup();
+  Commands Command;
+  char buffer[2048];
+  string prompt;
   while (true) {
+    getcwd(buffer, sizeof(buffer)); 
     input = {};
-    repl_dir_print();
-
-    getline(cin, user_in);
-    stringstream ss(user_in);
+    //repl_dir_print();
+    prompt = "\033[34m(pangolin)\033[32m" + string(buffer) + "\033[34m$\033[0m ";
+    char* line = readline(prompt.c_str());
+    //getline(cin, user_in);
+    stringstream ss(line);
     while (ss >> buf) {
       input.push_back(buf);
     }
@@ -19,13 +28,23 @@ void REPL::repl_loop() {
     if (input[0] == "exit") {
       exit(EXIT_SUCCESS);
     }
+
+    if(is_built_in(input[0])){
+      Command.determine_command(input);
+      add_history(line);
+      continue;
+    }
     const char *command = input[0].c_str();
     vector<char *> args = {};
     for (uint32_t i = 0; i < input.size(); i++) {
       args.push_back(const_cast<char *>(input[i].c_str()));
     }
+    if(is_aliased(input[0])){
+      for(auto c : aliases[input[0]]){
+        args.push_back(const_cast<char *>(c.c_str()));
+      }
+    }
     args.push_back(nullptr);
-
     pid_t child_pid = fork();
     if (child_pid == -1) {
       perror("fork");
@@ -39,11 +58,13 @@ void REPL::repl_loop() {
       perror("execvp");
       _exit(EXIT_FAILURE);
     }
+    add_history(line);
     cout << "\n";
     ss.clear();
   }
+  
 }
-// █
+
 // 158, 72, 68
 // 66, 63, 79
 void REPL::shell_startup() {
@@ -54,7 +75,6 @@ void REPL::shell_startup() {
   string block = "█";
   vector<string> blues = {"╗", "║", "╝", "═", "╚", "╔", "░"};
   for (size_t i = 0; i < logo.size(); i++) {
-    bool match_found = false;
     bool matchFound = false;
 
     if (logo.substr(i, block.length()) == block) {
@@ -92,26 +112,38 @@ void REPL::shell_startup() {
           "⠀⠙⢿⣿⣿⡿⠛⣉⣁⣀⣿⠃⠐⠛⠿⣿⣷⠀⠇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀\n"
           "⠀⠀⠀⠀⠈⠉⠃⠘⠿⠟⠛⠋⠀⠀⠀⠀⢹⠃⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀\n"
           "\033[37m";
-  string temp;
-  getline(cin, temp);
+  // string temp;
+  // getline(cin, temp);
 }
 
 void REPL::repl_dir_print() {
   char buffer[2048];
   if (getcwd(buffer, sizeof(buffer)) != NULL) {
-    cout << "\033[34m(pangolin)\033[32m " << buffer + 1 << "\033[34m$\033[0m ";
+    cout << "\033[34m(pangolin)\033[32m " << buffer+1 << "\033[34m$\033[0m ";
   }
 }
 
-bool REPL::is_outline(const string &s) {
-  static const vector<string> outlines = {u8"╔", u8"╗", u8"╚", u8"╝", u8"║", u8"═"};
-  for (const auto &o : outlines) {
-    if (s == o) return true;
+
+
+bool REPL::is_built_in(string command) {
+  for (size_t i = 0; i < builtin_commands.size(); i++) {
+    if (builtin_commands[i] == command){
+      return true;
+    };
   }
   return false;
 }
 
+bool REPL::is_aliased(string command){
+  for(auto c : aliases){
+    if(c.first == command){
+      return true;
+    }
+  }
+  return false;
+}
 
-//TODO: MAKE OWN SET OF FILES FOR START UP SCREEN TO REMOVE FROM REPL PART
-//ADD IN ALIAS COMMAND
-//ADD IN CD AND EXIT
+// TODO:
+// ADD IN CLOCK STUFF FOR EXIT AND START UP, MAYBE MAKE AN DIGITAL CLOCK, print time of command like current shell on far right 
+// ADD IN CD AND EXIT
+// ADD IN ALIAS COMMAND
