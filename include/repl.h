@@ -15,6 +15,7 @@
 #include <unistd.h>
 #include <unordered_map>
 #include <vector>
+#include <signal.h>
 using namespace std;
 
 struct REPL {
@@ -24,7 +25,11 @@ struct REPL {
   bool is_built_in(string command);
   bool is_aliased(string command);
   void check_dup_add_history(char* command);
-
+  void init_readline();
+  void setup_signals();
+  //void handle_sigint(int);
+  //void init_signals();
+  //volatile sig_atomic_t sigint_recieved = 0;
   string logo = R"(
     ██████╗░░█████╗░███╗░░░██╗░██████╗░░██████╗░██╗░░░░░██╗███╗░░░██╗
     ██╔═██║░██╔══██╗████╗░░██║██╔════╝░██╔═══██╗██║░░░░░██║████╗░░██║

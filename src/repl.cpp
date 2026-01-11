@@ -1,6 +1,15 @@
 #include "../include/repl.h"
 
+volatile sig_atomic_t sigint_recieved = 0;
 
+void handle_sigint(int) {
+  sigint_recieved = 1;
+
+  rl_replace_line("", 0);
+  rl_crlf();
+  rl_on_new_line();
+  rl_redisplay();
+}
 
 
 void REPL::repl_loop() {
@@ -13,12 +22,18 @@ void REPL::repl_loop() {
   char buffer[2048];
   string prompt;
   while (true) {
-    getcwd(buffer, sizeof(buffer)); 
+    sigint_recieved = 0;
+    getcwd(buffer, sizeof(buffer));
     input = {};
-    //repl_dir_print();
     prompt = "\033[34m(pangolin)\033[32m" + string(buffer) + "\033[34m$\033[0m ";
-    char* line = readline(prompt.c_str());
-    //getline(cin, user_in);
+    char *line = readline(prompt.c_str());
+    if (!line) {
+      break; // ctrl+d
+    }
+    if (sigint_recieved) {
+      free(line);
+      continue;
+    }
     stringstream ss(line);
     while (ss >> buf) {
       input.push_back(buf);
@@ -29,9 +44,9 @@ void REPL::repl_loop() {
       exit(EXIT_SUCCESS);
     }
 
-    if(is_built_in(input[0])){
+    if (is_built_in(input[0])) {
       Command.determine_command(input);
-      
+
       check_dup_add_history(line);
       continue;
     }
@@ -40,8 +55,8 @@ void REPL::repl_loop() {
     for (uint32_t i = 0; i < input.size(); i++) {
       args.push_back(const_cast<char *>(input[i].c_str()));
     }
-    if(is_aliased(input[0])){
-      for(auto c : aliases[input[0]]){
+    if (is_aliased(input[0])) {
+      for (auto c : aliases[input[0]]) {
         args.push_back(const_cast<char *>(c.c_str()));
       }
     }
@@ -55,7 +70,11 @@ void REPL::repl_loop() {
       // parent process
     } else {
       // child process
-      execvp(command, args.data());
+      signal(SIGINT, SIG_DFL); // kill child on ctrl+c
+      if(execvp(command, args.data()) == -1){
+        printf("Command not found: %s", command);
+        _exit(EXIT_FAILURE);
+      }
       perror("execvp");
       _exit(EXIT_FAILURE);
     }
@@ -63,7 +82,6 @@ void REPL::repl_loop() {
     cout << "\n";
     ss.clear();
   }
-  
 }
 
 // 158, 72, 68
@@ -75,6 +93,8 @@ void REPL::shell_startup() {
   string RESET = "\033[0m";
   string block = "█";
   vector<string> blues = {"╗", "║", "╝", "═", "╚", "╔", "░"};
+  rl_catch_signals = 0;
+  rl_catch_sigwinch = 0;
   for (size_t i = 0; i < logo.size(); i++) {
     bool matchFound = false;
 
@@ -120,39 +140,52 @@ void REPL::shell_startup() {
 void REPL::repl_dir_print() {
   char buffer[2048];
   if (getcwd(buffer, sizeof(buffer)) != NULL) {
-    cout << "\033[34m(pangolin)\033[32m " << buffer+1 << "\033[34m$\033[0m ";
+    cout << "\033[34m(pangolin)\033[32m " << buffer + 1 << "\033[34m$\033[0m ";
   }
 }
 
-
-
 bool REPL::is_built_in(string command) {
   for (size_t i = 0; i < builtin_commands.size(); i++) {
-    if (builtin_commands[i] == command){
+    if (builtin_commands[i] == command) {
       return true;
     };
   }
   return false;
 }
 
-bool REPL::is_aliased(string command){
-  for(auto c : aliases){
-    if(c.first == command){
+bool REPL::is_aliased(string command) {
+  for (auto c : aliases) {
+    if (c.first == command) {
       return true;
     }
   }
   return false;
 }
 
-void REPL::check_dup_add_history(char* command){
-  HIST_ENTRY* entry = history_get(history_length);
-  if(entry && strcmp(entry->line, command) == 0){
+void REPL::check_dup_add_history(char *command) {
+  HIST_ENTRY *entry = history_get(history_length);
+  if (entry && strcmp(entry->line, command) == 0) {
     return;
   }
   add_history(command);
 }
+
+void REPL::setup_signals() {
+  struct sigaction sa{};
+  sa.sa_handler = handle_sigint;
+  sigemptyset(&sa.sa_mask);
+  sa.sa_flags = SA_RESTART;
+  sigaction(SIGINT, &sa, nullptr);
+}
+
+void REPL::init_readline() {
+    rl_catch_signals = 0;
+    rl_catch_sigwinch = 0;
+}
+
 // TODO:
-// ADD IN CLOCK STUFF FOR EXIT AND START UP, MAYBE MAKE AN DIGITAL CLOCK, print time of command like current shell on far right 
+// ADD IN CLOCK STUFF FOR EXIT AND START UP, MAYBE MAKE AN DIGITAL CLOCK, print time of command like current shell on far right
 // ADD IN CD AND EXIT
 // ADD IN ALIAS COMMAND
-// figure out ctrl+c to not exit the shell but can still kill a process
+// figure out ctrl+c to not exit the shell but can still kill a process - done
+// error messages
