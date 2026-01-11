@@ -23,6 +23,8 @@ struct REPL {
   void repl_dir_print();
   bool is_built_in(string command);
   bool is_aliased(string command);
+  void check_dup_add_history(char* command);
+
   string logo = R"(
     ██████╗░░█████╗░███╗░░░██╗░██████╗░░██████╗░██╗░░░░░██╗███╗░░░██╗
     ██╔═██║░██╔══██╗████╗░░██║██╔════╝░██╔═══██╗██║░░░░░██║████╗░░██║

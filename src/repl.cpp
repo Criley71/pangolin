@@ -31,7 +31,8 @@ void REPL::repl_loop() {
 
     if(is_built_in(input[0])){
       Command.determine_command(input);
-      add_history(line);
+      
+      check_dup_add_history(line);
       continue;
     }
     const char *command = input[0].c_str();
@@ -58,7 +59,7 @@ void REPL::repl_loop() {
       perror("execvp");
       _exit(EXIT_FAILURE);
     }
-    add_history(line);
+    check_dup_add_history(line);
     cout << "\n";
     ss.clear();
   }
@@ -143,7 +144,15 @@ bool REPL::is_aliased(string command){
   return false;
 }
 
+void REPL::check_dup_add_history(char* command){
+  HIST_ENTRY* entry = history_get(history_length);
+  if(entry && strcmp(entry->line, command) == 0){
+    return;
+  }
+  add_history(command);
+}
 // TODO:
 // ADD IN CLOCK STUFF FOR EXIT AND START UP, MAYBE MAKE AN DIGITAL CLOCK, print time of command like current shell on far right 
 // ADD IN CD AND EXIT
 // ADD IN ALIAS COMMAND
+// figure out ctrl+c to not exit the shell but can still kill a process

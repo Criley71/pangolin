@@ -12,6 +12,7 @@ struct Commands{
   void determine_command(vector<string>& command);
   void cd(string path);
   void exit_shell();
+  
 };
 
 #endif
