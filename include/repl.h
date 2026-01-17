@@ -16,6 +16,11 @@
 #include <unordered_map>
 #include <vector>
 #include <signal.h>
+#include <fstream>
+#include <pwd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <errno.h>
 using namespace std;
 
 struct REPL {
@@ -27,6 +32,8 @@ struct REPL {
   void check_dup_add_history(char* command);
   void init_readline();
   void setup_signals();
+  bool unknown_command_contains_slash(const string& command);
+  bool found_in_path(const string& command);
   //void handle_sigint(int);
   //void init_signals();
   //volatile sig_atomic_t sigint_recieved = 0;
