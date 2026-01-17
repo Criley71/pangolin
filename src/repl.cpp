@@ -39,7 +39,9 @@ void REPL::repl_loop() {
     while (ss >> buf) {
       input.push_back(buf);
     }
-
+    for(auto& i : input){
+      i = tilde_translation(i);
+    }
     if (input[0] == "exit") {
       exit(EXIT_SUCCESS);
     }
@@ -112,7 +114,7 @@ void REPL::shell_startup() {
   }
   const char *state = getenv("XDG_STATE_HOME");
   string state_dir;
-  
+
   if (state) {
     state_dir = state;
   } else {
@@ -263,6 +265,28 @@ bool REPL::found_in_path(const string &command) {
   return false;
 }
 
+string REPL::tilde_translation(string arg) {
+  if (arg.empty() || arg[0] != '~') {
+    return arg;
+  }
+
+  const char *home = getenv("HOME");
+  if (!home) {
+    struct passwd *pw = getpwuid(getuid());
+    if (!pw) return arg; 
+    home = pw->pw_dir;
+  }
+
+  if (arg.size() == 1) {
+    return string(home);
+  }
+
+  if (arg[1] == '/') {
+    return string(home) + arg.substr(1);
+  }
+
+  return arg; 
+}
 // TODO:
 // ADD IN CLOCK STUFF FOR EXIT AND START UP, MAYBE MAKE AN DIGITAL CLOCK, print time of command like current shell on far right
 // ADD IN CD AND EXIT - cd done, exit will take 2 seconds

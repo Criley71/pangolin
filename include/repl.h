@@ -34,6 +34,7 @@ struct REPL {
   void setup_signals();
   bool unknown_command_contains_slash(const string& command);
   bool found_in_path(const string& command);
+  string tilde_translation(string arg);
   //void handle_sigint(int);
   //void init_signals();
   //volatile sig_atomic_t sigint_recieved = 0;
