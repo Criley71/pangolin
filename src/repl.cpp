@@ -12,95 +12,126 @@ void handle_sigint(int) {
 }
 
 void REPL::repl_loop() {
-
-  string user_in = "";
-  string buf = "";
-  vector<string> input = {};
   shell_startup();
+
   Commands Command;
-  char buffer[2048];
-  string prompt;
+  char cwd[2048];
   int last_status = 0;
+
   while (true) {
     sigint_recieved = 0;
-    getcwd(buffer, sizeof(buffer));
-    input = {};
 
-    prompt = "\033[34m(pangolin)\033[32m" + string(buffer) + "\033[34m$\033[0m ";
+    if (!getcwd(cwd, sizeof(cwd))) {
+      perror("getcwd");
+      continue;
+    }
+
+    string prompt = "\033[34m(pangolin)\033[32m" + string(cwd) + "\033[34m$\033[0m ";
+
     char *line = readline(prompt.c_str());
     if (!line) {
-      break; // ctrl+d
+      break; // Ctrl-D
     }
+
     if (sigint_recieved) {
       free(line);
       continue;
     }
+
+    vector<vector<string>> commands;
+    commands.push_back({});
+
     stringstream ss(line);
-    while (ss >> buf) {
-      input.push_back(buf);
+    string token;
+    while (ss >> token) {
+      if (token == "&&") {
+        commands.push_back({});
+      } else {
+        commands.back().push_back(token);
+      }
     }
-    for(auto& i : input){
-      i = tilde_translation(i);
+
+    for (auto &cmd : commands) {
+      for (auto &arg : cmd) {
+        arg = tilde_translation(arg);
+      }
     }
-    if (input[0] == "exit") {
+
+    if (!commands.empty() &&
+        !commands[0].empty() &&
+        commands[0][0] == "exit") {
+      free(line);
       exit(EXIT_SUCCESS);
     }
 
-    if (is_built_in(input[0])) {
-      Command.determine_command(input);
-
-      check_dup_add_history(line);
-      continue;
-    }
-
-    const char *command = input[0].c_str();
-    vector<char *> args = {};
-    for (uint32_t i = 0; i < input.size(); i++) {
-      args.push_back(const_cast<char *>(input[i].c_str()));
-    }
-
-    if (is_aliased(input[0])) {
-      for (auto c : aliases[input[0]]) {
-        args.push_back(const_cast<char *>(c.c_str()));
-      }
-    }
-
-    args.push_back(nullptr);
-    if (!unknown_command_contains_slash(input[0]) && !found_in_path(input[0])) {
-      cout << "pangolin: command not found: " << input[0] << "\n";
-      last_status = 127;
-      continue;
-    }
-    pid_t child_pid = fork();
-    if (child_pid == -1) {
-      perror("fork");
-      exit(EXIT_FAILURE);
-    } else if (child_pid > 0) {
-      wait(NULL);
-      // parent process
-    } else {
-      // child process
-      signal(SIGINT, SIG_DFL); // kill child on ctrl+c
-      execvp(args[0], args.data());
-      switch (errno) {
-      case ENOENT:
-        fprintf(stderr, "pangolin: command not found: %s\n", command);
-        _exit(127);
-      case EACCES:
-        fprintf(stderr, "pangolin: permission denied: %s\n", command);
-        _exit(126);
-      default:
-        perror("pangolin");
-        _exit(1);
-      }
-
-      // perror("execvp");
-      _exit(EXIT_FAILURE);
-    }
-    check_dup_add_history(line);
-    cout << "\n";
-    ss.clear();
     last_status = 0;
+
+    for (auto &cmd : commands) {
+      if (cmd.empty()) {
+        continue;
+      }
+
+      if (is_built_in(cmd[0])) {
+        Command.determine_command(cmd);
+      }
+
+      if(is_aliased(cmd[0])){
+        for(auto& c : aliases[cmd[0]]){
+          cmd.push_back((const_cast<char *>(c.c_str())));
+        }
+      }
+
+      if (!unknown_command_contains_slash(cmd[0]) &&
+          !found_in_path(cmd[0])) {
+        cerr << "pangolin: command not found: " << cmd[0] << "\n";
+        last_status = 127;
+        break;
+      }
+
+      vector<char *> argv;
+      for (auto &s : cmd) {
+        argv.push_back(const_cast<char *>(s.c_str()));
+      }
+      argv.push_back(nullptr);
+
+      pid_t pid = fork();
+      if (pid < 0) {
+        perror("fork");
+        last_status = 1;
+        break;
+      }
+
+      if (pid == 0) {
+        signal(SIGINT, SIG_DFL);
+        execvp(argv[0], argv.data());
+
+        switch (errno) {
+        case ENOENT:
+          _exit(127);
+        case EACCES:
+          _exit(126);
+        default:
+          _exit(1);
+        }
+      }
+
+      int status;
+      waitpid(pid, &status, 0);
+
+      if (WIFEXITED(status)) {
+        last_status = WEXITSTATUS(status);
+      } else {
+        last_status = 1;
+      }
+
+      if (last_status != 0) {
+        break;
+      }
+    }
+
+    check_dup_add_history(line);
+
+    free(line);
   }
 }
 
@@ -128,6 +159,8 @@ void REPL::shell_startup() {
   if (mkdir(pangolin_dir.c_str(), 0700) == -1 && errno != EEXIST) {
     perror("mkdir pangolin_dir");
   }
+
+  load_history();
   // cout << " \033[48;2;158;72;68m " << logo << "     \033[0m\n";
   string RED = "\033[38;2;158;72;68m";
   string BLUE = "\033[38;2;66;63;79m";
@@ -273,7 +306,7 @@ string REPL::tilde_translation(string arg) {
   const char *home = getenv("HOME");
   if (!home) {
     struct passwd *pw = getpwuid(getuid());
-    if (!pw) return arg; 
+    if (!pw) return arg;
     home = pw->pw_dir;
   }
 
@@ -285,13 +318,48 @@ string REPL::tilde_translation(string arg) {
     return string(home) + arg.substr(1);
   }
 
-  return arg; 
+  return arg;
+}
+
+void REPL::load_history() {
+  ifstream fin(get_history_dir());
+  if (!fin.good()) {
+    perror("history file open error");
+  }
+  stack<string> history;
+  string buffer;
+  while (getline(fin, buffer)) {
+    history.push(buffer);
+  }
+  while (!history.empty()) {
+    add_history((history.top()).c_str());
+    history.pop();
+  }
+}
+
+string REPL::get_history_dir() {
+  const char *home = getenv("HOME");
+  if (!home) {
+    struct passwd *pw = getpwuid(getuid());
+    if (pw) home = pw->pw_dir;
+  }
+  const char *state = getenv("XDG_STATE_HOME");
+  string state_dir;
+
+  if (state) {
+    state_dir = state;
+  } else {
+    state_dir = string(home) + "/.local/state";
+  }
+
+  return state_dir + "/pangolin/history";
 }
 // TODO:
 // ADD IN CLOCK STUFF FOR EXIT AND START UP, MAYBE MAKE AN DIGITAL CLOCK, print time of command like current shell on far right
 // ADD IN CD AND EXIT - cd done, exit will take 2 seconds
 // ADD IN ALIAS COMMAND
 // figure out ctrl+c to not exit the shell but can still kill a process - done
-// error messages
+// error messages - done?
 // piping
-// implement ~ translation
+// implement ~ translation - done
+// && implementation

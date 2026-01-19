@@ -21,6 +21,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <errno.h>
+#include <stack>
 using namespace std;
 
 struct REPL {
@@ -35,6 +36,8 @@ struct REPL {
   bool unknown_command_contains_slash(const string& command);
   bool found_in_path(const string& command);
   string tilde_translation(string arg);
+  void load_history();
+  string get_history_dir();
   //void handle_sigint(int);
   //void init_signals();
   //volatile sig_atomic_t sigint_recieved = 0;
