@@ -1,5 +1,5 @@
 CXX = g++
-CXXFLAGS = -Wall -Wextra -std=c++17 -MMD -MP
+CXXFLAGS = -Wall -Wextra -std=c++20 -MMD -MP
 LDFLAGS = -lreadline -lncurses
 TARGET = pangolin
 

@@ -38,6 +38,7 @@ void REPL::repl2() {
 
     
 
+    check_dup_add_history(input);
     try {
       string str_input = input;
       auto tokens = lexer.lex_input(str_input);
@@ -45,9 +46,8 @@ void REPL::repl2() {
       auto ast = parser.parse();
       executor.execute(ast.get());
     } catch (const exception &e) {
-      cerr << "?" << e.what() << '\n';
+      cerr << "?" << e.what() << ": " << input <<'\n';
     }
-    check_dup_add_history(input);
   }
 }
 
@@ -232,6 +232,7 @@ void REPL::shell_startup() {
       cout << logo[i];
     }
   }
+  /*
   cout << "\033[38;2;158;72;68m⠀⣀⠀⣀⣀⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀                   \n"
           "⣿⡀⢻⣿⣿⣿⣿⣿⣶⠀⣤⣄⣀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀\n"
           "⠛⠓⠀⢻⣿⡿⠋⣉⣀⣀⢘⣿⣿⣿⡇⢠⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀\n"
@@ -249,6 +250,7 @@ void REPL::shell_startup() {
           "\033[37m";
   // string temp;
   // getline(cin, temp);
+  */
 }
 
 void REPL::repl_dir_print() {

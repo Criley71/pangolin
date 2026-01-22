@@ -28,7 +28,12 @@ vector<Token> Lexer::lex_input(string &input) {
           current_state = Lexer_State::WORD;
         }
       } else if (c == '|') {
-        lex_return.push_back(Token(TokenType::PIPE, ""));
+        if(i + 1 < input.size() && input[i+1] == '|'){
+          lex_return.push_back(Token(TokenType::OR_IF, ""));
+          i++;
+        }else{
+          lex_return.push_back(Token(TokenType::PIPE, ""));
+        }
       } else {
         if(c != ' '){
           buffer += c;

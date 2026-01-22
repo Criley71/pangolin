@@ -22,7 +22,7 @@ unique_ptr<ASTNode> Parser::parse_command() {
         throw runtime_error("Expected command");
     }
 
-    auto node = std::make_unique<ASTNode>();
+    auto node = make_unique<ASTNode>();
     node->type = NodeType::COMMAND;
 
     while (!at_end() && peek().type == TokenType::WORD) {
