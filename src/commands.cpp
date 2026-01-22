@@ -1,10 +1,12 @@
 #include "../include/commands.h"
 
 
-void Commands::determine_command(vector<string>& command){
+bool Commands::determine_command(vector<string>& command){
   if(command[0] == "cd"){
     cd(command[1]);
+    return true;
   }
+  return false;
 }
 
 

@@ -3,8 +3,7 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include <lexor.h>
-#include "parser.h"
+#include "lexer.h"
 #include <stdexcept>
 using namespace std;
 enum class NodeType {
@@ -18,6 +17,7 @@ struct ASTNode {
     vector<string> argv;
     unique_ptr<ASTNode> left;
     unique_ptr<ASTNode> right;
+    
 };
 
 class Parser {

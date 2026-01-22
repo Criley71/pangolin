@@ -11,6 +11,46 @@ void handle_sigint(int) {
   rl_redisplay();
 }
 
+void REPL::repl2() {
+  shell_startup();
+  Commands Command;
+  char cwd[2048];
+  Lexer lexer;
+  Executor executor;
+
+  while (true) {
+    sigint_recieved = 0;
+    if (!getcwd(cwd, sizeof(cwd))) {
+      perror("getcwd");
+      continue;
+    }
+
+    string prompt = "\033[34m(pangolin)\033[32m" + string(cwd) + "\033[34m$\033[0m ";
+
+    char *input = readline(prompt.c_str());
+    if (!input) {
+      break; // ctrl+d
+    }
+    if (sigint_recieved) {
+      free(input);
+      continue;
+    }
+
+    
+
+    try {
+      string str_input = input;
+      auto tokens = lexer.lex_input(str_input);
+      Parser parser(tokens);
+      auto ast = parser.parse();
+      executor.execute(ast.get());
+    } catch (const exception &e) {
+      cerr << "?" << e.what() << '\n';
+    }
+    check_dup_add_history(input);
+  }
+}
+
 void REPL::repl_loop() {
   shell_startup();
 
@@ -30,7 +70,7 @@ void REPL::repl_loop() {
 
     char *line = readline(prompt.c_str());
     if (!line) {
-      break; // Ctrl-D
+      break; // ctrl+d
     }
 
     if (sigint_recieved) {
@@ -75,8 +115,8 @@ void REPL::repl_loop() {
         Command.determine_command(cmd);
       }
 
-      if(is_aliased(cmd[0])){
-        for(auto& c : aliases[cmd[0]]){
+      if (is_aliased(cmd[0])) {
+        for (auto &c : aliases[cmd[0]]) {
           cmd.push_back((const_cast<char *>(c.c_str())));
         }
       }
@@ -272,6 +312,9 @@ void REPL::setup_signals() {
   sigemptyset(&sa.sa_mask);
   sa.sa_flags = SA_RESTART;
   sigaction(SIGINT, &sa, nullptr);
+  setenv("TERM", "xterm-256color", 1);
+  setenv("LS_COLORS", "di=34:fi=0:ln=36:ex=32", 1);
+  //cout << isatty(STDOUT_FILENO) << "\n";
 }
 
 void REPL::init_readline() {
@@ -337,6 +380,8 @@ void REPL::load_history() {
   }
 }
 
+
+
 string REPL::get_history_dir() {
   const char *home = getenv("HOME");
   if (!home) {
@@ -354,6 +399,8 @@ string REPL::get_history_dir() {
 
   return state_dir + "/pangolin/history";
 }
+
+
 // TODO:
 // ADD IN CLOCK STUFF FOR EXIT AND START UP, MAYBE MAKE AN DIGITAL CLOCK, print time of command like current shell on far right
 // ADD IN CD AND EXIT - cd done, exit will take 2 seconds

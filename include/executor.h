@@ -5,13 +5,14 @@
 #include <stdexcept>
 #include <vector>
 #include <cstring>
+#include "commands.h"
 using namespace std;
 
 class Executor {
 public:
-    int execute(const ASTNode* node);
-
+    int execute(ASTNode* node);
+    void expand_commands(vector<string>& argv);
 private:
-    int execute_command(const ASTNode* node);
-    int execute_pipe(const ASTNode* node);
+    int execute_command(ASTNode* node);
+    int execute_pipe(ASTNode* node);
 };

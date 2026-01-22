@@ -8,7 +8,10 @@ OBJ_DIR = obj
 
 SRC = $(SRC_DIR)/pangolin.cpp \
       $(SRC_DIR)/repl.cpp \
-      $(SRC_DIR)/commands.cpp
+      $(SRC_DIR)/commands.cpp \
+	  $(SRC_DIR)/executor.cpp \
+	  $(SRC_DIR)/parser.cpp \
+	  $(SRC_DIR)/lexer.cpp
 
 OBJ = $(SRC:$(SRC_DIR)/%.cpp=$(OBJ_DIR)/%.o)
 DEP = $(OBJ:.o=.d)

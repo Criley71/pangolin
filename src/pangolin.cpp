@@ -4,6 +4,6 @@ int main(){
   REPL repl;
   repl.init_readline();
   repl.setup_signals();
-  repl.repl_loop();
+  repl.repl2();
   return 0;
 }

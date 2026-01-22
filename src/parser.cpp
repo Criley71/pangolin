@@ -17,6 +17,22 @@ unique_ptr<ASTNode> Parser::parse() {
   return node;
 }
 
+unique_ptr<ASTNode> Parser::parse_command() {
+    if (at_end() || peek().type != TokenType::WORD) {
+        throw runtime_error("Expected command");
+    }
+
+    auto node = std::make_unique<ASTNode>();
+    node->type = NodeType::COMMAND;
+
+    while (!at_end() && peek().type == TokenType::WORD) {
+        node->argv.push_back(tokens[pos].lexeme);
+        pos++;
+    }
+
+    return node;
+}
+
 unique_ptr<ASTNode> Parser::parse_pipeline() {
     auto left = parse_command();
 
@@ -60,3 +76,4 @@ const Token& Parser::peek() const {
 bool Parser::at_end() const {
     return pos >= tokens.size();
 }
+

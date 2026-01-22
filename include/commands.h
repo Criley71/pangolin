@@ -9,7 +9,7 @@
 using namespace std;
 
 struct Commands{
-  void determine_command(vector<string>& command);
+  bool determine_command(vector<string>& command);
   void cd(string path);
   void exit_shell();
   

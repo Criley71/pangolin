@@ -1,9 +1,10 @@
-#ifndef LEXOR_H
-#define LEXOR_H
+#ifndef lexer_H
+#define lexer_H
 #include <string>
 #include <vector>
+#include <iostream>
 using namespace std;
-enum TokenType {
+enum class TokenType {
   WORD,
   PIPE,
   AND_IF,
@@ -12,7 +13,7 @@ enum TokenType {
   REDIRECT_IN,
   REDIRECT_APPEND,
   SEMICOLON,
-  NEWLINE,
+  NLINE,
   BACKGROUND,
   LPAREN,
   RPAREN,
@@ -20,7 +21,7 @@ enum TokenType {
   INVALID
 };
 
-enum Lexor_State {
+enum class Lexer_State {
   DEFAULT,         // between tokens
   WORD,            // unquoted text
   IN_SINGLE_QUOTE, // single quote
@@ -39,8 +40,8 @@ struct Token {
   Token(TokenType, string);
 };
 
-struct Lexor {
-  Lexor_State current_state = DEFAULT;
+struct Lexer {
+  Lexer_State current_state = Lexer_State::DEFAULT;
   vector<Token> lexed_tokens = {};
   vector<Token> lex_input(string &input);
 };

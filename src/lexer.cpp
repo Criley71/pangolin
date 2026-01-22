@@ -1,43 +1,48 @@
-#include "../include/lexor.h"
+#include "../include/lexer.h"
 
 Token::Token(TokenType tt, string i) {
   type = tt;
   lexeme = i;
 }
 
-vector<Token> Lexor::lex_input(string &input) {
+vector<Token> Lexer::lex_input(string &input) {
   vector<Token> lex_return = {};
   string buffer = "";
+  current_state = Lexer_State::DEFAULT;
   for (size_t i = 0; i < input.size(); i++) {
     char c = input[i];
     switch (current_state) {
-    case DEFAULT:
+    case Lexer_State::DEFAULT:
       if (c == '\'') {
-        current_state = IN_SINGLE_QUOTE;
+        current_state = Lexer_State::IN_SINGLE_QUOTE;
       } else if (c == '"') {
-        current_state = IN_DOUBLE_QUOTE;
+        current_state = Lexer_State::IN_DOUBLE_QUOTE;
       } else if (c == '\\') {
-        current_state = ESCAPE;
+        current_state = Lexer_State::ESCAPE;
       } else if (c == '&') {
         if (i + 1 < input.size() && input[i + 1] == '&') {
           lex_return.push_back(Token(TokenType::AND_IF, ""));
           i++; // consume second '&'
+          
         } else {
-          current_state = WORD;
+          current_state = Lexer_State::WORD;
         }
       } else if (c == '|') {
         lex_return.push_back(Token(TokenType::PIPE, ""));
       } else {
-        current_state = WORD;
+        if(c != ' '){
+          buffer += c;
+        }
+        current_state = Lexer_State::WORD;
       }
       break;
-    case WORD:
+    case Lexer_State::WORD:
       if (c == ' ') {
         if (!buffer.empty()) {
           lex_return.push_back(Token(TokenType::WORD, buffer));
           buffer = "";
         }
-        current_state = DEFAULT;
+        current_state = Lexer_State::DEFAULT;
       } else if (c == '&' || c == '|') {
         // finalize current word before a symbol
         if (!buffer.empty()) {
@@ -45,32 +50,32 @@ vector<Token> Lexor::lex_input(string &input) {
           buffer = "";
         }
         i--; // reprocess the symbol in DEFAULT
-        current_state = DEFAULT;
+        current_state = Lexer_State::DEFAULT;
       } else {
         buffer += c;
       }
       break;
-    case IN_SINGLE_QUOTE:
+    case Lexer_State::IN_SINGLE_QUOTE:
       if (c == '\'') {
         lex_return.push_back(Token(TokenType::WORD, buffer));
         buffer = "";
-        current_state = DEFAULT;
+        current_state = Lexer_State::DEFAULT;
       } else {
         buffer += c;
       }
       break;
-    case IN_DOUBLE_QUOTE:
+    case Lexer_State::IN_DOUBLE_QUOTE:
       if (c == '"') {
         lex_return.push_back(Token(TokenType::WORD, buffer));
         buffer = "";
-        current_state = DEFAULT;
+        current_state = Lexer_State::DEFAULT;
       } else {
         buffer += c;
       }
       break;
-    case ESCAPE:
+    case Lexer_State::ESCAPE:
       buffer += c;
-      current_state = WORD; // or previous state
+      current_state = Lexer_State::WORD; // or previous state
       break;
     }
   }

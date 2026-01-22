@@ -22,6 +22,9 @@
 #include <sys/stat.h>
 #include <errno.h>
 #include <stack>
+#include "lexer.h"
+#include "parser.h"
+#include "executor.h"
 using namespace std;
 
 struct REPL {
@@ -38,6 +41,8 @@ struct REPL {
   string tilde_translation(string arg);
   void load_history();
   string get_history_dir();
+  void repl2();
+  
   //void handle_sigint(int);
   //void init_signals();
   //volatile sig_atomic_t sigint_recieved = 0;
@@ -69,6 +74,23 @@ struct REPL {
       \033[37m
       )";
 
+      /*
+⣿⠿⣿⠿⠿⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+⣿⠀⢿⡄⠀⠀⠀⠀⠀⠉⣿⠛⠻⠿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+⣿⣤⣬⣿⡄⠀⢀⣴⠶⠿⠿⡧⠀⠀⠀⢸⡟⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+⣿⠁⠀⠀⠀⠀⣿⠁⠀⠀⠀⠀⢀⣠⣤⣘⣷⡀⠈⠻⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+⣿⠀⠀⠀⢀⣀⣻⣆⠀⠀⠀⢼⡏⠉⠉⠉⠙⠋⠀⠀⣸⠿⣿⣿⣿⣿⣿⣿⣿⣿
+⣿⠀⢰⡟⠋⠉⠙⠛⠃⠀⠀⢈⣻⣶⣶⠶⢶⣤⡀⢰⡏⠀⠙⢿⣿⣿⣿⣿⣿⣿
+⣿⠀⢿⡀⠀⠀⠀⠀⠀⠀⣴⠟⠉⠘⢷⣤⣄⠈⠻⣾⣧⠀⠀⠈⢿⣿⣿⣿⣿⣿
+⣿⡶⣾⣧⡀⠀⠀⠀⠀⢸⡏⠀⠀⠀⠀⠀⠀⠀⠀⢰⣿⣷⣤⡀⠈⢿⣿⣿⣿⣿
+⣿⠀⠀⠈⠀⢀⣤⠶⢶⣾⡇⣼⣷⣦⣄⡀⠀⠀⠀⠈⠉⠁⠈⠻⣦⣌⣿⣿⣿⣿
+⣿⠀⠀⠀⠀⢿⡁⠀⠀⢸⣧⣿⣿⣿⣿⣿⣷⣶⣤⣄⣀⠀⠀⠀⠀⠙⢿⣿⣿⣿
+⣿⣀⣴⠶⠶⢾⣷⣄⠀⠀⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣶⣿⣿⣿⣿⣿
+⣿⣿⠁⠀⠀⠀⠈⠉⠀⢰⡞⠛⠛⣿⡿⠛⠻⢯⡙⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+⣿⣿⣦⡀⠀⠀⢀⣤⠶⠾⠿⠀⣼⣯⣤⣀⠀⠈⣿⣸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+⣿⣿⣿⣿⣷⣶⣼⣧⣀⣠⣤⣴⣿⣿⣿⣿⡆⣼⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+      */
 private:
   vector<string> builtin_commands{"cd", "exit", "help", "pwd"};
   unordered_map<string, vector<string>> aliases = {
