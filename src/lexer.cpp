@@ -9,6 +9,7 @@ vector<Token> Lexer::lex_input(string &input) {
   vector<Token> lex_return = {};
   string buffer = "";
   current_state = Lexer_State::DEFAULT;
+  Lexer_State prev_state;
   for (size_t i = 0; i < input.size(); i++) {
     char c = input[i];
     switch (current_state) {
@@ -20,22 +21,30 @@ vector<Token> Lexer::lex_input(string &input) {
       } else if (c == '\\') {
         current_state = Lexer_State::ESCAPE;
       } else if (c == '&') {
+        if (!buffer.empty()) {
+          lex_return.push_back(Token(TokenType::WORD, buffer));
+          buffer.clear();
+        }
         if (i + 1 < input.size() && input[i + 1] == '&') {
           lex_return.push_back(Token(TokenType::AND_IF, ""));
           i++; // consume second '&'
-          
+
         } else {
-          current_state = Lexer_State::WORD;
+          lex_return.push_back(Token(TokenType::BACKGROUND, ""));
         }
       } else if (c == '|') {
-        if(i + 1 < input.size() && input[i+1] == '|'){
+        if (!buffer.empty()) {
+          lex_return.push_back(Token(TokenType::WORD, buffer));
+          buffer.clear();
+        }
+        if (i + 1 < input.size() && input[i + 1] == '|') {
           lex_return.push_back(Token(TokenType::OR_IF, ""));
           i++;
-        }else{
+        } else {
           lex_return.push_back(Token(TokenType::PIPE, ""));
         }
       } else {
-        if(c != ' '){
+        if (c != ' ') {
           buffer += c;
         }
         current_state = Lexer_State::WORD;
@@ -56,33 +65,38 @@ vector<Token> Lexer::lex_input(string &input) {
         }
         i--; // reprocess the symbol in DEFAULT
         current_state = Lexer_State::DEFAULT;
+      } else if (c == '\'') {
+        current_state = Lexer_State::IN_SINGLE_QUOTE;
+      } else if (c == '"') {
+        current_state = Lexer_State::IN_DOUBLE_QUOTE;
       } else {
         buffer += c;
       }
       break;
     case Lexer_State::IN_SINGLE_QUOTE:
       if (c == '\'') {
-        lex_return.push_back(Token(TokenType::WORD, buffer));
-        buffer = "";
-        current_state = Lexer_State::DEFAULT;
+        // lex_return.push_back(Token(TokenType::WORD, buffer));
+        // buffer = "";
+        current_state = Lexer_State::WORD;
       } else {
         buffer += c;
       }
       break;
     case Lexer_State::IN_DOUBLE_QUOTE:
       if (c == '"') {
-        lex_return.push_back(Token(TokenType::WORD, buffer));
-        buffer = "";
-        current_state = Lexer_State::DEFAULT;
+        // lex_return.push_back(Token(TokenType::WORD, buffer));
+        // buffer = "";
+        current_state = Lexer_State::WORD;
       } else {
         buffer += c;
       }
       break;
     case Lexer_State::ESCAPE:
       buffer += c;
-      current_state = Lexer_State::WORD; // or previous state
+      current_state = prev_state;
       break;
     }
+    prev_state = current_state;
   }
   if (!buffer.empty()) {
     lex_return.push_back(Token(TokenType::WORD, buffer));

@@ -9,7 +9,8 @@ using namespace std;
 enum class NodeType {
     COMMAND,
     PIPE,
-    AND_IF
+    AND_IF,
+    OR_IF
 };
 
 struct ASTNode {
@@ -29,7 +30,7 @@ private:
     const vector<Token>& tokens;
     size_t pos;
 
-    unique_ptr<ASTNode> parse_and_if();
+    unique_ptr<ASTNode> parse_logical();
     unique_ptr<ASTNode> parse_pipeline();
     unique_ptr<ASTNode> parse_command();
 

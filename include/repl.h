@@ -25,6 +25,7 @@
 #include "lexer.h"
 #include "parser.h"
 #include "executor.h"
+#include <queue>
 using namespace std;
 
 struct REPL {

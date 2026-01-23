@@ -20,6 +20,15 @@ void Executor::expand_commands(vector<string> &argv) {
       argv.insert(argv.begin() + 1, "--color=auto");
     }
   }
+  const char *home = getenv("HOME");
+  //if (!home) return;
+  for (auto &arg : argv) {
+    if (!arg.empty() && arg[0] == '~') {
+      if (arg.size() == 1 || arg[1] == '/') {
+        arg = string(home) + arg.substr(1);
+      }
+    }
+  }
 }
 
 int Executor::execute_command(ASTNode *node) {
@@ -33,11 +42,10 @@ int Executor::execute_command(ASTNode *node) {
     argv.push_back(const_cast<char *>(arg.c_str()));
   }
   argv.push_back(nullptr);
-  if(command.determine_command(node->argv)){
+  if (command.determine_command(node->argv)) {
     return 1;
   }
 
-  
   pid_t pid = fork();
   if (pid == 0) {
     execvp(argv[0], argv.data());
@@ -107,6 +115,12 @@ int Executor::execute(ASTNode *node) {
       return execute(node->right.get());
     return status;
   }
+    case NodeType::OR_IF: {
+      int status = execute(node->left.get());
+    if (status != 0)
+      return execute(node->right.get());
+    return status;
+    }
   }
 
   throw runtime_error("Unknown AST node type");

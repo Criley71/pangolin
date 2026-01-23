@@ -31,6 +31,11 @@ void REPL::repl2() {
     if (!input) {
       break; // ctrl+d
     }
+    char* ptr = input;
+
+    
+
+    check_dup_add_history(input);
     if (sigint_recieved) {
       free(input);
       continue;
@@ -38,7 +43,6 @@ void REPL::repl2() {
 
     
 
-    check_dup_add_history(input);
     try {
       string str_input = input;
       auto tokens = lexer.lex_input(str_input);
@@ -371,13 +375,13 @@ void REPL::load_history() {
   if (!fin.good()) {
     perror("history file open error");
   }
-  stack<string> history;
+  queue<string> history;
   string buffer;
   while (getline(fin, buffer)) {
     history.push(buffer);
   }
   while (!history.empty()) {
-    add_history((history.top()).c_str());
+    add_history((history.front()).c_str());
     history.pop();
   }
 }
