@@ -31,9 +31,7 @@ void REPL::repl2() {
     if (!input) {
       break; // ctrl+d
     }
-    char* ptr = input;
-
-    
+    char *ptr = input;
 
     check_dup_add_history(input);
     if (sigint_recieved) {
@@ -41,16 +39,16 @@ void REPL::repl2() {
       continue;
     }
 
-    
+    string str_input = input;
+    str_input.push_back('\n');
 
     try {
-      string str_input = input;
       auto tokens = lexer.lex_input(str_input);
       Parser parser(tokens);
       auto ast = parser.parse();
       executor.execute(ast.get());
     } catch (const exception &e) {
-      cerr << "?" << e.what() << ": " << input <<'\n';
+      cerr << e.what() << ": " << input << '\n';
     }
   }
 }
@@ -320,7 +318,7 @@ void REPL::setup_signals() {
   sigaction(SIGINT, &sa, nullptr);
   setenv("TERM", "xterm-256color", 1);
   setenv("LS_COLORS", "di=34:fi=0:ln=36:ex=32", 1);
-  //cout << isatty(STDOUT_FILENO) << "\n";
+  // cout << isatty(STDOUT_FILENO) << "\n";
 }
 
 void REPL::init_readline() {
@@ -386,8 +384,6 @@ void REPL::load_history() {
   }
 }
 
-
-
 string REPL::get_history_dir() {
   const char *home = getenv("HOME");
   if (!home) {
@@ -406,6 +402,19 @@ string REPL::get_history_dir() {
   return state_dir + "/pangolin/history";
 }
 
+bool REPL::ends_in_backslash(string &s) {
+  size_t i = s.size();
+  while (i > 0 && isspace((unsigned char)s[i - 1]))
+    i--;
+  if (i == 0 || s[i - 1] != '\\'){
+    return false;
+  }
+  size_t count = 0;
+  while (i > 0 && s[--i] == '\\'){
+    count++;
+  }
+  return (count % 2) == 1;
+}
 
 // TODO:
 // ADD IN CLOCK STUFF FOR EXIT AND START UP, MAYBE MAKE AN DIGITAL CLOCK, print time of command like current shell on far right

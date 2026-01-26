@@ -43,6 +43,7 @@ struct REPL {
   void load_history();
   string get_history_dir();
   void repl2();
+  bool ends_in_backslash(string& s);
   
   //void handle_sigint(int);
   //void init_signals();

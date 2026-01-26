@@ -92,8 +92,12 @@ vector<Token> Lexer::lex_input(string &input) {
       }
       break;
     case Lexer_State::ESCAPE:
-      buffer += c;
-      current_state = prev_state;
+      if(c == '\n'){
+        current_state = Lexer_State::DEFAULT;
+      }else {
+        buffer += c;
+        current_state = Lexer_State::WORD;
+      }
       break;
     }
     prev_state = current_state;
