@@ -13,7 +13,6 @@ void handle_sigint(int) {
 
 void REPL::repl2() {
   shell_startup();
-  Commands Command;
   char cwd[2048];
   Lexer lexer;
   Executor executor;
@@ -26,21 +25,37 @@ void REPL::repl2() {
     }
 
     string prompt = "\033[34m(pangolin)\033[32m" + string(cwd) + "\033[34m$\033[0m ";
+    string str_input;
+    bool first_line = true;
 
-    char *input = readline(prompt.c_str());
-    if (!input) {
-      break; // ctrl+d
+    while (true) { // Accumulate possibly multiple lines
+      char *line = readline(first_line ? prompt.c_str() : "> ");
+      if (!line) return; // Ctrl+D
+
+      if (sigint_recieved) {
+        free(line);
+        str_input.clear(); 
+        break;             
+      }
+
+      string current_line(line);
+      free(line);
+
+      if (ends_in_backslash(current_line)) {
+        current_line.pop_back();
+        str_input += current_line;
+        first_line = false;       
+        continue;        
+      } else {
+        str_input += current_line; 
+        break;                    
+      }
     }
-    char *ptr = input;
 
-    check_dup_add_history(input);
-    if (sigint_recieved) {
-      free(input);
+    if (str_input.empty()) {
       continue;
     }
-
-    string str_input = input;
-    str_input.push_back('\n');
+    check_dup_add_history(str_input.c_str());
 
     try {
       auto tokens = lexer.lex_input(str_input);
@@ -48,7 +63,7 @@ void REPL::repl2() {
       auto ast = parser.parse();
       executor.execute(ast.get());
     } catch (const exception &e) {
-      cerr << e.what() << ": " << input << '\n';
+      cerr << e.what() << ": " << str_input << '\n';
     }
   }
 }
@@ -171,7 +186,7 @@ void REPL::repl_loop() {
       }
     }
 
-    check_dup_add_history(line);
+    // check_dup_add_history(line);
 
     free(line);
   }
@@ -280,7 +295,7 @@ bool REPL::is_aliased(string command) {
   return false;
 }
 
-void REPL::check_dup_add_history(char *command) {
+void REPL::check_dup_add_history(const char *command) {
   HIST_ENTRY *entry = history_get(history_length);
   if (entry && strcmp(entry->line, command) == 0) {
     return;
@@ -406,11 +421,11 @@ bool REPL::ends_in_backslash(string &s) {
   size_t i = s.size();
   while (i > 0 && isspace((unsigned char)s[i - 1]))
     i--;
-  if (i == 0 || s[i - 1] != '\\'){
+  if (i == 0 || s[i - 1] != '\\') {
     return false;
   }
   size_t count = 0;
-  while (i > 0 && s[--i] == '\\'){
+  while (i > 0 && s[--i] == '\\') {
     count++;
   }
   return (count % 2) == 1;

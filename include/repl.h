@@ -34,7 +34,7 @@ struct REPL {
   void repl_dir_print();
   bool is_built_in(string command);
   bool is_aliased(string command);
-  void check_dup_add_history(char* command);
+  void check_dup_add_history(const char* command);
   void init_readline();
   void setup_signals();
   bool unknown_command_contains_slash(const string& command);
